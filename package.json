@@ -1,0 +1,23 @@
+{
+  "name": "pi-academic-research",
+  "version": "0.1.0",
+  "description": "Pi package wrapping Imbad0202/academic-research-skills: 4 academic research skills (paper writing, peer review, pipeline, deep research) adapted for the Pi coding agent, with Pi-native /ars-* prompt templates and subagents.",
+  "keywords": [
+    "pi-package",
+    "academic",
+    "research",
+    "academic-writing",
+    "peer-review"
+  ],
+  "license": "CC-BY-NC-4.0",
+  "private": false,
+  "pi": {
+    "skills": [
+      "upstream/academic-paper",
+      "upstream/academic-paper-reviewer",
+      "upstream/academic-pipeline",
+      "upstream/deep-research"
+    ],
+    "prompts": ["prompts/*.md"]
+  }
+}
