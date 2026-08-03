@@ -1,0 +1,18 @@
+# gentle-committer configuration.
+# Docs: https://github.com/ChaoXu1997/gentle-committer#configuration
+
+[committer]
+enabled           = true
+commit_mode       = "bypass"          # bypass (direct commit) | review (gentle-ai gate)
+trigger_mode      = "on_goal"         # on_goal | agent_sensible | after_tool | manual
+staged_commits    = true              # subagent splits the diff into logical commits
+min_changes       = 1
+exclude_patterns  = []
+async_threshold   = 10                # >=N files -> background subprocess; 0 = always sync
+
+# Inject work-unit commit discipline into the commit-message prompts (optional):
+# prompt_rules_path = "commit-rules/work-unit-commits.md"
+
+# subagent_model             = "openai/gpt-4o-mini"
+# subagent_grouping_min_files = 15
+# subagent_message_min_files  = 3
