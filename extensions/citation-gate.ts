@@ -419,6 +419,23 @@ export default async function (pi: ExtensionAPI): Promise<void> {
 	// Lazy-import typebox (a bundled Pi peer dep) so the pure helpers above remain importable
 	// without it — the unit tests import classify/extractDois directly.
 	const { Type } = await import("typebox");
+
+	// Session-start check: notify if ref-verify (the citation-gate backend) is not installed.
+	// The gate degrades to advisory without it, so this is a warning, not an error.
+	pi.on("session_start", async (_event, ctx) => {
+		if (!ctx.hasUI) return;
+		try {
+			const bin = await resolveBinary();
+			if (!bin) {
+				ctx.ui.notify(
+					"ARS citation gate: ref-verify CLI not found — citation verification will be advisory only (never blocks). Install: pipx install Moonweave-Research/ref-verify",
+					"warning",
+				);
+			}
+		} catch {
+			// Detection failure → don't spam the user on every session start.
+		}
+	});
 	const INPUT_SCHEMA = Type.Object({
 		input: Type.String({
 			description:
