@@ -17,37 +17,153 @@ peer review, and the full research pipeline) — for use inside the Pi coding ag
 | 4 skills (`academic-paper`, `academic-paper-reviewer`, `academic-pipeline`, `deep-research`) + all their `references/`, `templates/`, `examples/` | ✅ Loaded natively via `pi` manifest (Agent Skills standard) |
 | `/ars-*` slash commands (`commands/`) | ✅ Ported to Pi prompt templates under `prompts/` (13 of 16; 3 cache/log commands need the upstream Python runtime and are stubbed) |
 | Claude Code subagents (`agents/`) | ✅ All **38** agents adapted to Pi subagent format under `subagents/` — covers the upstream 39-agent ensemble (12 paper + 7 reviewer + 5 pipeline + 14 deep-research + 1 shared `compliance`); `socratic_mentor` is de-duplicated across `academic-paper`/`deep-research` |
-| Claude Code hooks (PreToolUse write-scope guard) | ❌ Not ported — see [Behavioral caveats](#behavioral-caveats) below |
+| Claude Code hooks (PreToolUse write-scope guard) | ✅ Ported to a Pi extension (`extensions/write-scope-guard.ts`) — see [Behavioral caveats](#behavioral-caveats) below |
 
 ## What is **not** portable from Claude Code
 
 - `/plugin marketplace add` and `/plugin install` — Claude Code runtime commands
 - The upstream's own multi-agent orchestration via Claude Code's Task tool (Pi uses `subagent_run` instead)
-- The Python runtime (`upstream/scripts/`, 200+ modules) backing the deterministic citation-verification gate (#182) and the 3 stubbed `/ars-*` commands
-- The `PreToolUse` write-scope guard (`upstream/hooks/run_guard.sh`) — see caveat below
+- The Python runtime (`upstream/scripts/`, 200+ modules) backing the deterministic citation-verification gate (#182) and the 3 stubbed `/ars-*` commands. (The `#134` write-scope guard is **not** part of this — it is re-implemented natively as a Pi extension; see below.)
 
 All four skills are functional: the 4 `SKILL.md` files load from the vendored `upstream/`
 submodule (with their `references/`, `templates/`, `examples/`), and every one of the 38
 upstream agents is available as a Pi subagent. The pipeline runs end-to-end driven by Pi's
-`subagent_run` and the `/ars-*` prompt templates instead of Claude Code's primitives.
+`subagent_run` and the `/ars-*` prompt templates instead of Claude Code's primitives, and the
+upstream write-scope guard is enforced by a native Pi extension (below).
+
+## Write-scope guard (Pi extension)
+
+This package ships a native Pi port of the upstream `PreToolUse` write-scope guard at
+`extensions/write-scope-guard.ts` (declared under the `pi.extensions` key in `package.json`,
+backed by `extensions/ars_phase_scope_manifest.json`). It loads automatically when the package
+is installed.
+
+**How it works.** Claude Code wires the guard as a `PreToolUse` shell hook
+(`upstream/hooks/run_guard.sh` → `ars_write_scope_guard.py`). Pi has no `PreToolUse`; instead the
+port is a Pi **extension** that subscribes to the `tool_call` event (fires before a tool executes,
+can return `{ block: true, reason }`). Pi subagents run as **in-process `AgentSession`s**, and the
+subagents runner inherits parent extensions into the subagent session (filtered to the
+`tool_call`/`tool_result`/`user_bash` events) — so the handler fires inside each subagent for its
+own tool calls. The current subagent is identified via the pi-subagents interaction-session
+registry (`Symbol.for("pi.subagents.interactionSessions")`, keyed by session id); if that lookup
+fails the actor is treated as unconstrained (the upstream's "absent agent_type ⇒ main session"
+posture). The manifest's snake_case `_agent` keys are mapped from the Pi subagents' kebab-case
+frontmatter `name`s (`draft-writer` → `draft_writer_agent`; all 23 Bucket A agents map 1:1).
+
+**What it enforces** (faithful to upstream `#134`):
+
+- **Phase Boundary (v3.9.2)** — the 23 single-phase ("Bucket A") agents are deterministically
+  fenced to their `allowed_write_globs` (e.g. `bibliography` → `phase2_*/**`). An out-of-scope
+  `write`/`edit` is blocked regardless of the agent's prompt. `draft-writer` retains its documented
+  `phase4_*/**` + `phase6_*/**` dual-phase static union.
+- **`#134` write-scope clamping** + **infra self-protection** — no actor (including the main
+  session) may rewrite the guard, its manifest, the ported subagent definitions, or the vendored
+  upstream enforcement surface.
+- **Bash policy** — `bash` is denied **wholesale** for Bucket A agents (neither "writes a file"
+  nor "is read-only" is decidable from a command string; all-deny is the only zero-fail-open
+  policy). Bucket A agents use the grep/find/read tools to inspect and write/edit to write.
+
+**Posture.** The guard only **adds** denials and **fails open** on any internal error (unreadable
+manifest, registry shape drift, a thrown exception) — it never wedges the session and never emits
+an explicit "allow" that would skip Pi's other permission rules.
+
+**Audit trail.** Each inspected decision is appended (best-effort, never blocking) to
+`.pi/ars-write-scope-audit.jsonl` under the workspace root — timestamp, subagent, tool, target,
+decision, reason. Borrowed from `pi-secured-setup` / `pi-access-guard`. The `.pi/` dir is gitignored
+runtime state, so the log never lands in version control.
+
+**Verified.** The pure decision core (`evaluateDecision` and the path/glob helpers) is unit-tested
+in `extensions/write-scope-guard.test.ts` (26 cases: phase fencing, bash deny, infra protection,
+traversal, schema-drift, dual-phase union, glob segment semantics). Run the full suite with:
+
+```bash
+npm install              # devDependencies: typescript, @types/node
+npm exec -- tsc -p tsconfig.test.json   # emit to .test-build/
+cp extensions/ars_phase_scope_manifest.json .test-build/
+echo '{"type":"module"}' > .test-build/package.json
+node .test-build/write-scope-guard.test.js   # 26 cases
+node .test-build/citation-gate.test.js       # 18 cases
+```
+
+## Citation-verification gate (Pi extension)
+
+The upstream `#182` deterministic citation-verification gate (which hard-blocks a submission on
+unverified citations) is re-implemented natively as `extensions/citation-gate.ts`. Instead of
+porting the upstream 200-module Python runtime, it wraps **`ref-verify`**
+([Moonweave-Research/ref-verify](https://github.com/Moonweave-Research/ref-verify)) — a zero-dep
+Python CLI that does the same job more rigorously (CrossRef / Semantic Scholar / PubMed / OpenAlex
+metadata, **retraction detection**, verbatim-abstract claim checks).
+
+**Surface.** Two entry points share one core:
+
+- `ars_verify_citations` **tool** — agent-callable. The `citation-compliance` / `formatter` agents
+  invoke it at submission. It is NOT a `write`/`edit`/`bash` tool, so the write-scope guard does not
+  fence it — a Bucket A agent may call it even though its bash is denied wholesale.
+- `/ars-verify-citations` **command** — manual user run.
+
+**How it works.** It resolves the `ref-verify` binary, extracts DOIs from a references file
+(`.bib`/`.txt`/`.md`/`.tex`/`.csv`/`.jsonl`) or a literal DOI list, runs the Quick Screen
+(`verify-doi <doi> --json`) per DOI (bounded concurrency), and aggregates the verdicts.
+
+**Gate outcome** (mirrors ref-verify's conservatism — a conservative guard, not an oracle):
+
+- `fail` — any DOI returned an explicit **REJECT** (dead DOI, DOI resolves to a different paper,
+  retracted). This is the only hard block.
+- `review` — one or more DOIs returned **WARN** / **UNVERIFIABLE** (no abstract reachable). Not a
+  block: ref-verify is explicit that `UNVERIFIABLE` means "no abstract reachable", NOT "wrong".
+- `pass` — all DOIs returned **PASS**.
+- `advisory` — `ref-verify` is not installed, OR no DOIs found in the input. **Never blocks** —
+  identical to the upstream no-Python posture.
+
+**Audit trail.** Each gate run (tool or command) is appended (best-effort, never blocking) to
+`.pi/ars-citation-audit.jsonl` under the workspace root — timestamp, source, outcome, per-DOI
+verdicts, input (truncated), and metadata file. Mirrors the write-scope guard's audit; the `.pi/`
+dir is gitignored runtime state.
+
+**Install the backend.** This extension is glue; it needs `ref-verify` (a PEP-668-managed Python
+install — use `pipx`, NOT a bare `pip install`):
+
+```bash
+# Recommended (manages its own venv, puts `ref-verify` on PATH):
+git clone https://github.com/Moonweave-Research/ref-verify.git ~/software/ref-verify
+pipx install ~/software/ref-verify
+ref-verify --help    # verify
+
+# Or editable from a checkout (for hacking on ref-verify itself):
+cd ~/software/ref-verify && python3 -m pip install --user -e .   # may need a venv on PEP-668 hosts
+```
+
+**Verified end-to-end** against ref-verify 1.2.0 + live CrossRef (see
+`extensions/citation-gate.e2e.test.ts`): correct metadata → `pass`; bare DOI → `review`
+(insufficient-metadata WARN); dead DOI → `fail` (HTTP 404 → REJECT).```
+
+For a **native-Pi alternative** (no Python CLI, uses Docling + the `native-web-search` skill) see
+[`pi-citecheck`](https://github.com/baochunli/pi-citecheck) (`/citecheck`, optimized for
+hallucinated-reference detection in PDFs). The two are complementary: `ref-verify` is stricter
+metadata + retraction + claim verification; `pi-citecheck` is lower-friction PDF-first screening.
 
 ## Behavioral caveats
 
 The upstream ships a `PreToolUse` hook (`upstream/hooks/hooks.json` + `run_guard.sh`) that
-**enforces** several invariants at runtime. Pi has its own hook system and this guard is
-**not** ported, so the invariants below are **convention only** in Pi — each agent's
-written "Phase Boundary" section still documents them, but nothing blocks a violation:
+**enforces** several invariants at runtime. **All three are now deterministically enforced again
+in Pi** via two native extensions:
 
-- **v3.9.2 Phase Boundary** — single-phase ("Bucket A") agents are normally blocked from
-  writing into other phases' `phase{M}_*/` directories. In Pi this is advisory.
-- **#134 write-scope rescoping** — the guard clamps each agent's writes to its declared scope.
-- **#182 deterministic citation-verification gate** — a Python gate (needs the unported
-  runtime) that hard-blocks submission on unverified citations.
+- **v3.9.2 Phase Boundary** — ✅ **enforced** by `extensions/write-scope-guard.ts`
+  (Bucket A agents blocked from other phases' dirs).
+- **#134 write-scope rescoping** — ✅ **enforced** by the same guard
+  (each agent clamped to its declared scope).
+- **#182 deterministic citation-verification gate** — ✅ **enforced** by
+  `extensions/citation-gate.ts` (wraps `ref-verify`; degrades to advisory if `ref-verify` is not
+  installed — matching the upstream no-Python posture).
 
-**Practical impact:** the `academic-pipeline` orchestrator is the most affected, since it
-relies on phase fencing to keep agents from stomping each other's work. If you need the
-upstream's hard guarantees, run the original Claude Code plugin alongside, or re-implement
-an equivalent Pi `PreToolUse` hook (`upstream/hooks/run_guard.sh` is a readable reference).
+**Practical impact:** the `academic-pipeline` orchestrator's phase fencing is fully restored, and
+submission citations are verifiable. Each agent's written "Phase Boundary" section is now backed
+by a real block; submission citations get a real gate when `ref-verify` is installed.
+
+**Complementary plugins.** The write-scope guard is specialized (phase/manifest-aware) and is NOT
+replaced by general Pi permission extensions — but they run alongside it without conflict (all only
+add denials). If you want broader safety, consider `pi-permission-system`, `pi-guardrails`,
+`safe-coder`, or `pi-access-guard` from the [pi.dev package catalog](https://pi.dev/packages).
 
 ## Install
 

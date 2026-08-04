@@ -30,6 +30,19 @@
       "upstream/academic-pipeline",
       "upstream/deep-research"
     ],
-    "prompts": ["prompts/*.md"]
+    "prompts": [
+      "prompts/*.md"
+    ],
+    "extensions": [
+      "extensions/*.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "typescript": "^7.0.2"
   }
 }

@@ -1,0 +1,11 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"noEmit": false,
+		"module": "ESNext",
+		"outDir": ".test-build",
+		"rootDir": "extensions",
+		"allowImportingTsExtensions": false
+	},
+	"include": ["extensions/write-scope-guard.ts", "extensions/write-scope-guard.test.ts", "extensions/citation-gate.ts", "extensions/citation-gate.test.ts", "extensions/citation-gate.e2e.test.ts"]
+}

@@ -5,3 +5,7 @@ node_modules/
 .pi/
 .atl/
 openspec/
+
+# Local test build artifacts
+test-build/
+.test-build/
