@@ -120,17 +120,14 @@ metadata, **retraction detection**, verbatim-abstract claim checks).
 verdicts, input (truncated), and metadata file. Mirrors the write-scope guard's audit; the `.pi/`
 dir is gitignored runtime state.
 
-**Install the backend.** This extension is glue; it needs `ref-verify` (a PEP-668-managed Python
-install — use `pipx`, NOT a bare `pip install`):
+**Install the backend.** The package's `postinstall` script (`scripts/init-submodule.sh`)
+attempts to install `ref-verify` automatically via `pipx` when you run `pi install`. If that
+succeeded, you're done. If `pipx` was unavailable or the install failed, install manually
+(ref-verify is a PEP-668-managed Python CLI — use `pipx`, NOT a bare `pip install`):
 
 ```bash
-# Recommended (manages its own venv, puts `ref-verify` on PATH):
-git clone https://github.com/Moonweave-Research/ref-verify.git ~/software/ref-verify
-pipx install ~/software/ref-verify
+pipx install git+https://github.com/Moonweave-Research/ref-verify.git
 ref-verify --help    # verify
-
-# Or editable from a checkout (for hacking on ref-verify itself):
-cd ~/software/ref-verify && python3 -m pip install --user -e .   # may need a venv on PEP-668 hosts
 ```
 
 **Verified end-to-end** against ref-verify 1.2.0 + live CrossRef (see

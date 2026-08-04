@@ -428,7 +428,7 @@ export default async function (pi: ExtensionAPI): Promise<void> {
 			const bin = await resolveBinary();
 			if (!bin) {
 				ctx.ui.notify(
-					"ARS citation gate: ref-verify CLI not found — citation verification will be advisory only (never blocks). Install: pipx install Moonweave-Research/ref-verify",
+					"ARS citation gate: ref-verify not found (advisory mode). Re-run pi install for this package, or: pipx install git+https://github.com/Moonweave-Research/ref-verify.git",
 					"warning",
 				);
 			}
