@@ -20,8 +20,32 @@
   "bugs": {
     "url": "https://github.com/ChaoXu1997/pi-academic-research/issues"
   },
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "extensions/citation-gate.ts",
+    "extensions/write-scope-guard.ts",
+    "extensions/pipeline-integrity-gate.ts",
+    "extensions/ars_phase_scope_manifest.json",
+    "prompts",
+    "subagents",
+    "scripts",
+    "upstream/academic-paper",
+    "upstream/academic-paper-reviewer",
+    "upstream/academic-pipeline",
+    "upstream/deep-research",
+    "README.md",
+    "NOTICE.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "postinstall": "bash scripts/init-submodule.sh"
+    "postinstall": "bash scripts/init-submodule.sh",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "tsc -p tsconfig.test.json && cp extensions/ars_phase_scope_manifest.json .test-build/ && node .test-build/citation-gate.test.js && node .test-build/write-scope-guard.test.js && node .test-build/pipeline-integrity-gate.test.js",
+    "test:e2e": "tsc -p tsconfig.test.json && node .test-build/citation-gate.e2e.test.js",
+    "prepublishOnly": "npm run typecheck && npm run test"
   },
   "pi": {
     "skills": [

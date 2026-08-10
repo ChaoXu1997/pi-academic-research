@@ -23,7 +23,10 @@ peer review, and the full research pipeline) — for use inside the Pi coding ag
 
 - `/plugin marketplace add` and `/plugin install` — Claude Code runtime commands
 - The upstream's own multi-agent orchestration via Claude Code's Task tool (Pi uses `subagent_run` instead)
-- The Python runtime (`upstream/scripts/`, 200+ modules) backing the deterministic citation-verification gate (#182) and the 3 stubbed `/ars-*` commands. (The `#134` write-scope guard is **not** part of this — it is re-implemented natively as a Pi extension; see below.)
+- The upstream Python runtime (`upstream/scripts/`, ~268 modules) — the deterministic **structural-check suite** that the 4 skills reference as integrity gates (`check_pipeline_integrity.py`, `check_phase_conformance.py`, `check_sprint_contract.py`, `check_panel_synthesis.py`, …). These have **no Pi-native equivalent** and are silently skipped — the agent reaches those steps as advisory no-ops. Porting the critical ones natively is tracked as follow-up work.
+- The 3 `/ars-*` cache/log commands (`ars-cache-invalidate`, `ars-mark-read`, `ars-unmark-read`) — they shell out to the upstream Python CLI + SQLite cache and are shipped as documented stubs.
+
+> ✅ Both runtime invariants **are** ported natively: `#134` write-scope guard → `extensions/write-scope-guard.ts`, and `#182` citation-verification gate → `extensions/citation-gate.ts` (wraps the `ref-verify` CLI instead of the Python runtime, degrading to advisory if `ref-verify` is absent). See [Behavioral caveats](#behavioral-caveats) below.
 
 All four skills are functional: the 4 `SKILL.md` files load from the vendored `upstream/`
 submodule (with their `references/`, `templates/`, `examples/`), and every one of the 38
@@ -77,12 +80,10 @@ in `extensions/write-scope-guard.test.ts` (26 cases: phase fencing, bash deny, i
 traversal, schema-drift, dual-phase union, glob segment semantics). Run the full suite with:
 
 ```bash
-npm install              # devDependencies: typescript, @types/node
-npm exec -- tsc -p tsconfig.test.json   # emit to .test-build/
-cp extensions/ars_phase_scope_manifest.json .test-build/
-echo '{"type":"module"}' > .test-build/package.json
-node .test-build/write-scope-guard.test.js   # 26 cases
-node .test-build/citation-gate.test.js       # 18 cases
+npm install            # devDependencies: typescript, @types/node
+npm run typecheck      # tsc --noEmit on extensions/
+npm test               # write-scope-guard (26 cases) + citation-gate (18 cases)
+npm run test:e2e       # needs ref-verify installed + network
 ```
 
 ## Citation-verification gate (Pi extension)
@@ -132,7 +133,7 @@ ref-verify --help    # verify
 
 **Verified end-to-end** against ref-verify 1.2.0 + live CrossRef (see
 `extensions/citation-gate.e2e.test.ts`): correct metadata → `pass`; bare DOI → `review`
-(insufficient-metadata WARN); dead DOI → `fail` (HTTP 404 → REJECT).```
+(insufficient-metadata WARN); dead DOI → `fail` (HTTP 404 → REJECT).
 
 For a **native-Pi alternative** (no Python CLI, uses Docling + the `native-web-search` skill) see
 [`pi-citecheck`](https://github.com/baochunli/pi-citecheck) (`/citecheck`, optimized for
