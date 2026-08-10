@@ -28,6 +28,8 @@
     "extensions/citation-gate.ts",
     "extensions/write-scope-guard.ts",
     "extensions/pipeline-integrity-gate.ts",
+    "extensions/core/sprint-contract-core.ts",
+    "extensions/sprint-contract-gate.ts",
     "extensions/ars_phase_scope_manifest.json",
     "prompts",
     "subagents",
@@ -43,7 +45,7 @@
   "scripts": {
     "postinstall": "bash scripts/init-submodule.sh",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "tsc -p tsconfig.test.json && cp extensions/ars_phase_scope_manifest.json .test-build/ && node .test-build/citation-gate.test.js && node .test-build/write-scope-guard.test.js && node .test-build/pipeline-integrity-gate.test.js",
+    "test": "tsc -p tsconfig.test.json && cp extensions/ars_phase_scope_manifest.json .test-build/ && node .test-build/citation-gate.test.js && node .test-build/write-scope-guard.test.js && node .test-build/pipeline-integrity-gate.test.js && node .test-build/core/sprint-contract-core.test.js && node .test-build/sprint-contract-gate.test.js",
     "test:e2e": "tsc -p tsconfig.test.json && node .test-build/citation-gate.e2e.test.js",
     "prepublishOnly": "npm run typecheck && npm run test"
   },

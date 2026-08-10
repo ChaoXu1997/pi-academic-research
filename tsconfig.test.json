@@ -7,5 +7,5 @@
 		"rootDir": "extensions",
 		"allowImportingTsExtensions": false
 	},
-	"include": ["extensions/write-scope-guard.ts", "extensions/write-scope-guard.test.ts", "extensions/citation-gate.ts", "extensions/citation-gate.test.ts", "extensions/citation-gate.e2e.test.ts", "extensions/pipeline-integrity-gate.ts", "extensions/pipeline-integrity-gate.test.ts"]
+	"include": ["extensions/write-scope-guard.ts", "extensions/write-scope-guard.test.ts", "extensions/citation-gate.ts", "extensions/citation-gate.test.ts", "extensions/citation-gate.e2e.test.ts", "extensions/pipeline-integrity-gate.ts", "extensions/pipeline-integrity-gate.test.ts", "extensions/core/sprint-contract-core.ts", "extensions/core/sprint-contract-core.test.ts", "extensions/sprint-contract-gate.ts", "extensions/sprint-contract-gate.test.ts"]
 }
