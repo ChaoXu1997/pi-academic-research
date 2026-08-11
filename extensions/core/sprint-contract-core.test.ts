@@ -22,10 +22,38 @@ import { dirname, join } from "node:path";
 const HERE = dirname(fileURLToPath(import.meta.url));
 // From .test-build/core/ → project root is ../../
 const REPO = join(HERE, "..", "..");
-const FULL_PATH = join(REPO, "upstream", "shared", "contracts", "reviewer", "full.json");
-const MF_PATH = join(REPO, "upstream", "shared", "contracts", "reviewer", "methodology_focus.json");
-const WRITER_PATH = join(REPO, "upstream", "shared", "contracts", "writer", "full.json");
-const EVALUATOR_PATH = join(REPO, "upstream", "shared", "contracts", "evaluator", "full.json");
+const FULL_PATH = join(
+	REPO,
+	"upstream",
+	"shared",
+	"contracts",
+	"reviewer",
+	"full.json",
+);
+const MF_PATH = join(
+	REPO,
+	"upstream",
+	"shared",
+	"contracts",
+	"reviewer",
+	"methodology_focus.json",
+);
+const WRITER_PATH = join(
+	REPO,
+	"upstream",
+	"shared",
+	"contracts",
+	"writer",
+	"full.json",
+);
+const EVALUATOR_PATH = join(
+	REPO,
+	"upstream",
+	"shared",
+	"contracts",
+	"evaluator",
+	"full.json",
+);
 
 let passed = 0;
 let failed = 0;
@@ -128,7 +156,10 @@ function applySchemaMutation(contract: SprintContract, cas: string): void {
 		baseline_version: "baseline_version",
 	};
 
-	if (cas.startsWith("missing_") && cas.replace("missing_", "") in missingTopMap) {
+	if (
+		cas.startsWith("missing_") &&
+		cas.replace("missing_", "") in missingTopMap
+	) {
 		delete contract[missingTopMap[cas.replace("missing_", "")]];
 	} else if (cas === "missing_dimensions") {
 		delete contract.acceptance_dimensions;
@@ -195,7 +226,10 @@ function applySchemaMutation(contract: SprintContract, cas: string): void {
 		delete condition.cross_reviewer_quantifier;
 	} else if (cas === "missing_panel") {
 		delete contract.panel_size;
-	} else if (cas === "short_override_ladder" || cas === "misordered_override_ladder") {
+	} else if (
+		cas === "short_override_ladder" ||
+		cas === "misordered_override_ladder"
+	) {
 		contract.override_ladder = [
 			{ round: 1, trigger: "first", required: ["a"] },
 			{ round: 2, trigger: "second", required: ["b"] },
@@ -204,7 +238,7 @@ function applySchemaMutation(contract: SprintContract, cas: string): void {
 		if (cas === "short_override_ladder") {
 			(contract.override_ladder as unknown[]).pop();
 		} else {
-			((contract.override_ladder as Record<string, unknown>[])[0]).round = 2;
+			(contract.override_ladder as Record<string, unknown>[])[0].round = 2;
 		}
 	} else {
 		throw new Error(`unknown mutation: ${cas}`);
@@ -259,7 +293,9 @@ console.log("test_branch13_reviewer_without_role_scope_fails");
 	const errors = validate(contract);
 	check(
 		"error mentions eligible_roles or owner_role",
-		errors.some((e) => e.includes("eligible_roles") || e.includes("owner_role")),
+		errors.some(
+			(e) => e.includes("eligible_roles") || e.includes("owner_role"),
+		),
 	);
 }
 
@@ -277,7 +313,8 @@ for (const [label, path, badAction] of [
 	["evaluator", EVALUATOR_PATH, "writer_decision=accept"],
 ] as const) {
 	const contract = load(path);
-	(contract.failure_conditions as Record<string, unknown>[])[0].action = badAction;
+	(contract.failure_conditions as Record<string, unknown>[])[0].action =
+		badAction;
 	check(`${label} bad action rejected`, validate(contract).length > 0);
 }
 
@@ -298,9 +335,9 @@ for (const [label, path, field] of [
 console.log("test_f0_accept_grade_is_schema_required");
 {
 	const contract = full();
-	contract.failure_conditions = (contract.failure_conditions as Record<string, unknown>[]).filter(
-		(c) => c.condition_id !== "F0",
-	);
+	contract.failure_conditions = (
+		contract.failure_conditions as Record<string, unknown>[]
+	).filter((c) => c.condition_id !== "F0");
 	check("F0 removed rejected", validate(contract).length > 0);
 }
 
@@ -313,14 +350,18 @@ console.log("test_scoring_plan_requires_five_canonical_fields");
 	const contract = full();
 	const mp = contract.measurement_procedure as Record<string, unknown>;
 	const sps = mp.scoring_plan_schema as Record<string, unknown>;
-	(sps.required as string[]).splice((sps.required as string[]).indexOf("what_triggers_fatal"), 1);
+	(sps.required as string[]).splice(
+		(sps.required as string[]).indexOf("what_triggers_fatal"),
+		1,
+	);
 	check("scoring <5 fields rejected", validate(contract).length > 0);
 }
 
 console.log("test_scoring_duplicate_field_rejected");
 {
 	const contract = full();
-	const sps = (contract.measurement_procedure as Record<string, unknown>).scoring_plan_schema as Record<string, unknown>;
+	const sps = (contract.measurement_procedure as Record<string, unknown>)
+		.scoring_plan_schema as Record<string, unknown>;
 	const req = sps.required as string[];
 	req[req.length - 1] = req[0];
 	check("scoring duplicate rejected", validate(contract).length > 0);
@@ -329,7 +370,8 @@ console.log("test_scoring_duplicate_field_rejected");
 console.log("test_scoring_typoed_field_rejected");
 {
 	const contract = full();
-	const sps = (contract.measurement_procedure as Record<string, unknown>).scoring_plan_schema as Record<string, unknown>;
+	const sps = (contract.measurement_procedure as Record<string, unknown>)
+		.scoring_plan_schema as Record<string, unknown>;
 	const req = sps.required as string[];
 	req[req.length - 1] = "fatal_trigger";
 	check("scoring typo rejected", validate(contract).length > 0);
@@ -342,9 +384,11 @@ console.log("test_scoring_typoed_field_rejected");
 console.log("test_schema_rejects_duplicate_eligible_role");
 {
 	const contract = full();
-	(contract.acceptance_dimensions as Record<string, unknown>[])[0]
-		.eligible_roles = [
-		...((contract.acceptance_dimensions as Record<string, unknown>[])[0].eligible_roles as string[]),
+	(
+		contract.acceptance_dimensions as Record<string, unknown>[]
+	)[0].eligible_roles = [
+		...((contract.acceptance_dimensions as Record<string, unknown>[])[0]
+			.eligible_roles as string[]),
 		"methodology",
 	];
 	check("duplicate eligible role rejected", validate(contract).length > 0);
@@ -357,25 +401,36 @@ console.log("test_schema_rejects_duplicate_eligible_role");
 console.log("test_full_and_mf_exact_eligibility_maps");
 {
 	const fullMap: Record<string, unknown> = {};
-	for (const dim of (full().acceptance_dimensions as Record<string, unknown>[])) {
+	for (const dim of full().acceptance_dimensions as Record<string, unknown>[]) {
 		fullMap[dim.id as string] = [dim.eligible_roles, dim.owner_role];
 	}
-	check("full eligibility map matches", JSON.stringify(fullMap) === JSON.stringify({
-		D1: [["methodology"], "methodology"],
-		D2: [["domain"], "domain"],
-		D3: [["da", "methodology"], "da"],
-		D4: [["perspective"], "perspective"],
-		D5: [["eic"], "eic"],
-		D6: [["eic"], "eic"],
-	}));
+	check(
+		"full eligibility map matches",
+		JSON.stringify(fullMap) ===
+			JSON.stringify({
+				D1: [["methodology"], "methodology"],
+				D2: [["domain"], "domain"],
+				D3: [["da", "methodology"], "da"],
+				D4: [["perspective"], "perspective"],
+				D5: [["eic"], "eic"],
+				D6: [["eic"], "eic"],
+			}),
+	);
 	const mfMap: Record<string, unknown> = {};
-	for (const dim of (load(MF_PATH).acceptance_dimensions as Record<string, unknown>[])) {
+	for (const dim of load(MF_PATH).acceptance_dimensions as Record<
+		string,
+		unknown
+	>[]) {
 		mfMap[dim.id as string] = [dim.eligible_roles, dim.owner_role];
 	}
-	check("mf eligibility map matches", JSON.stringify(mfMap) === JSON.stringify({
-		D1: [["methodology"], "methodology"],
-		D2: [["eic"], "eic"],
-	}));
+	check(
+		"mf eligibility map matches",
+		JSON.stringify(mfMap) ===
+			JSON.stringify({
+				D1: [["methodology"], "methodology"],
+				D2: [["eic"], "eic"],
+			}),
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -386,7 +441,8 @@ console.log("test_duplicate_dimension_and_condition_ids_fail_invariants");
 {
 	const contract = full();
 	(contract.acceptance_dimensions as Record<string, unknown>[])[1].id = "D1";
-	(contract.failure_conditions as Record<string, unknown>[])[1].condition_id = "F1";
+	(contract.failure_conditions as Record<string, unknown>[])[1].condition_id =
+		"F1";
 	const errors = check_structural_invariants(contract);
 	check(
 		"mentions duplicate acceptance_dimensions id",
@@ -405,25 +461,36 @@ console.log("test_duplicate_dimension_and_condition_ids_fail_invariants");
 console.log("test_owner_must_be_eligible");
 {
 	const contract = full();
-	(contract.acceptance_dimensions as Record<string, unknown>[])[0].owner_role = "eic";
+	(contract.acceptance_dimensions as Record<string, unknown>[])[0].owner_role =
+		"eic";
 	const errors = check_structural_invariants(contract);
-	check("mentions owner_role", errors.some((e) => e.includes("owner_role")));
+	check(
+		"mentions owner_role",
+		errors.some((e) => e.includes("owner_role")),
+	);
 }
 
 console.log("test_roles_must_be_mode_subset");
 {
 	const contract = load(MF_PATH);
-	((contract.acceptance_dimensions as Record<string, unknown>[])[0].eligible_roles as string[]).push(
-		"domain",
-	);
+	(
+		(contract.acceptance_dimensions as Record<string, unknown>[])[0]
+			.eligible_roles as string[]
+	).push("domain");
 	const errors = check_structural_invariants(contract);
-	check("mentions outside", errors.some((e) => e.includes("outside")));
+	check(
+		"mentions outside",
+		errors.some((e) => e.includes("outside")),
+	);
 }
 
 console.log("test_every_mode_role_must_have_a_dimension");
 {
 	const contract = full();
-	for (const dim of contract.acceptance_dimensions as Record<string, unknown>[]) {
+	for (const dim of contract.acceptance_dimensions as Record<
+		string,
+		unknown
+	>[]) {
 		dim.eligible_roles = (dim.eligible_roles as string[]).filter(
 			(role) => role !== "perspective",
 		);
@@ -433,7 +500,10 @@ console.log("test_every_mode_role_must_have_a_dimension");
 		}
 	}
 	const errors = check_structural_invariants(contract);
-	check("mentions perspective", errors.some((e) => e.includes("perspective")));
+	check(
+		"mentions perspective",
+		errors.some((e) => e.includes("perspective")),
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -447,9 +517,13 @@ for (const expression of [
 	"D5 has a fatal block",
 ]) {
 	const contract = full();
-	(contract.failure_conditions as Record<string, unknown>[])[0].expression = expression;
+	(contract.failure_conditions as Record<string, unknown>[])[0].expression =
+		expression;
 	const errors = check_structural_invariants(contract);
-	check(`'${expression}' mentions fatal atom`, errors.some((e) => e.includes("fatal atom")));
+	check(
+		`'${expression}' mentions fatal atom`,
+		errors.some((e) => e.includes("fatal atom")),
+	);
 }
 
 console.log("test_mandatory_fatal_atoms_are_valid");
@@ -476,7 +550,10 @@ for (const [label, path] of [
 	dims[0].eligible_roles = ["eic"];
 	dims[0].owner_role = "eic";
 	const errors = check_structural_invariants(contract);
-	check(`${label} mentions reviewer-only`, errors.some((e) => e.includes("reviewer-only")));
+	check(
+		`${label} mentions reviewer-only`,
+		errors.some((e) => e.includes("reviewer-only")),
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -484,12 +561,18 @@ for (const [label, path] of [
 // ---------------------------------------------------------------------------
 
 console.log("test_pinned_constants");
-check("ROLE_SETS.reviewer_full has 5 roles", ROLE_SETS.reviewer_full?.size === 5);
+check(
+	"ROLE_SETS.reviewer_full has 5 roles",
+	ROLE_SETS.reviewer_full?.size === 5,
+);
 check(
 	"ROLE_SETS.reviewer_methodology_focus has 2 roles",
 	ROLE_SETS.reviewer_methodology_focus?.size === 2,
 );
-check("EXPECTED_PANEL_SIZE.reviewer_full === 5", EXPECTED_PANEL_SIZE.reviewer_full === 5);
+check(
+	"EXPECTED_PANEL_SIZE.reviewer_full === 5",
+	EXPECTED_PANEL_SIZE.reviewer_full === 5,
+);
 check(
 	"EXPECTED_PANEL_SIZE.reviewer_methodology_focus === 2",
 	EXPECTED_PANEL_SIZE.reviewer_methodology_focus === 2,

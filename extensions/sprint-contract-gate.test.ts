@@ -13,7 +13,13 @@ import {
 	appendAudit,
 	type GateResult,
 } from "./sprint-contract-gate.js";
-import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
+import {
+	readFileSync,
+	writeFileSync,
+	mkdirSync,
+	rmSync,
+	existsSync,
+} from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
@@ -22,9 +28,30 @@ import type { SprintContract } from "./core/sprint-contract-core.js";
 const HERE = dirname(fileURLToPath(import.meta.url));
 // From .test-build/ → project root is ../
 const REPO = join(HERE, "..");
-const FULL_PATH = join(REPO, "upstream", "shared", "contracts", "reviewer", "full.json");
-const WRITER_PATH = join(REPO, "upstream", "shared", "contracts", "writer", "full.json");
-const EVALUATOR_PATH = join(REPO, "upstream", "shared", "contracts", "evaluator", "full.json");
+const FULL_PATH = join(
+	REPO,
+	"upstream",
+	"shared",
+	"contracts",
+	"reviewer",
+	"full.json",
+);
+const WRITER_PATH = join(
+	REPO,
+	"upstream",
+	"shared",
+	"contracts",
+	"writer",
+	"full.json",
+);
+const EVALUATOR_PATH = join(
+	REPO,
+	"upstream",
+	"shared",
+	"contracts",
+	"evaluator",
+	"full.json",
+);
 
 let passed = 0;
 let failed = 0;
@@ -52,7 +79,10 @@ function clone<T>(x: T): T {
 }
 
 function withTempDir(fn: (dir: string) => void): void {
-	const dir = join(tmpdir(), `ars-sprint-contract-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+	const dir = join(
+		tmpdir(),
+		`ars-sprint-contract-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+	);
 	mkdirSync(dir, { recursive: true });
 	try {
 		fn(dir);
@@ -83,7 +113,10 @@ const WARNING_CASES: [string, string, boolean][] = [
 ];
 
 // Faithful port of upstream test_legacy_warning_boundaries setup.
-function setupWarningCase(cas: string): { contract: SprintContract; current: string | null } {
+function setupWarningCase(cas: string): {
+	contract: SprintContract;
+	current: string | null;
+} {
 	const contract = full();
 	let current: string | null = null;
 	const dims = contract.acceptance_dimensions as Record<string, unknown>[];
@@ -146,7 +179,10 @@ for (const [cas, fragment, present] of WARNING_CASES) {
 		);
 	}
 }
-check(`all 14 WARNING_CASES correct (${warningPassCount}/14)`, warningPassCount === 14);
+check(
+	`all 14 WARNING_CASES correct (${warningPassCount}/14)`,
+	warningPassCount === 14,
+);
 
 // ---------------------------------------------------------------------------
 // AC-9: SC-1 boundary (lag exactly 2 → no fire) — explicit
@@ -157,7 +193,10 @@ console.log("test_sc1_boundary_lag_two_no_fire");
 	const contract = full();
 	contract.baseline_version = "v3.4.0";
 	const warnings = warn_suspicious(contract, "v3.6.2");
-	check("no SC-1 at lag==2", !warnings.some((w) => w.startsWith("SC-1 WARNING")));
+	check(
+		"no SC-1 at lag==2",
+		!warnings.some((w) => w.startsWith("SC-1 WARNING")),
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -176,7 +215,10 @@ console.log("test_sc12_single_judge_mandatory_warning");
 	}
 	check(
 		"SC-12 dims == {D1, D2, D6}",
-		sc12Dims.size === 3 && sc12Dims.has("D1") && sc12Dims.has("D2") && sc12Dims.has("D6"),
+		sc12Dims.size === 3 &&
+			sc12Dims.has("D1") &&
+			sc12Dims.has("D2") &&
+			sc12Dims.has("D6"),
 	);
 }
 
@@ -188,7 +230,8 @@ console.log("test_generator_sc9_reads_mode_specific_source");
 {
 	// writer
 	const writer = load(WRITER_PATH);
-	const pca = (writer.pre_commitment_artifacts as Record<string, unknown>).acceptance_criteria_paraphrase as Record<string, unknown>;
+	const pca = (writer.pre_commitment_artifacts as Record<string, unknown>)
+		.acceptance_criteria_paraphrase as Record<string, unknown>;
 	pca.minimum_dimensions = 99;
 	check(
 		"writer SC-9 fires (pmd source)",
@@ -196,7 +239,9 @@ console.log("test_generator_sc9_reads_mode_specific_source");
 	);
 	// evaluator
 	const evaluator = load(EVALUATOR_PATH);
-	(evaluator.disagreement_handling as Record<string, unknown>).paraphrase_minimum_dimensions = 99;
+	(
+		evaluator.disagreement_handling as Record<string, unknown>
+	).paraphrase_minimum_dimensions = 99;
 	check(
 		"evaluator SC-9 fires (pmd source)",
 		warn_suspicious(evaluator, null).some((w) => w.startsWith("SC-9 WARNING")),
@@ -213,8 +258,14 @@ for (const [label, path] of [
 	["evaluator", EVALUATOR_PATH],
 ] as const) {
 	const warnings = warn_suspicious(load(path), null);
-	check(`${label} no SC-5`, !warnings.some((w) => w.startsWith("SC-5 WARNING")));
-	check(`${label} no SC-11`, !warnings.some((w) => w.startsWith("SC-11 WARNING")));
+	check(
+		`${label} no SC-5`,
+		!warnings.some((w) => w.startsWith("SC-5 WARNING")),
+	);
+	check(
+		`${label} no SC-11`,
+		!warnings.some((w) => w.startsWith("SC-11 WARNING")),
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -227,7 +278,10 @@ withTempDir((td) => {
 	writeFileSync(path, JSON.stringify(full()), "utf-8");
 	const r = cli([path]);
 	check("exit 0", r.exitCode === 0);
-	check("stdout has OK line", r.stdout.includes("is a valid sprint_contract (Schema 13.2)"));
+	check(
+		"stdout has OK line",
+		r.stdout.includes("is a valid sprint_contract (Schema 13.2)"),
+	);
 });
 
 console.log("test_cli_ars_version_with_and_without_v");
@@ -239,7 +293,10 @@ withTempDir((td) => {
 	const r1 = cli([path, "--ars-version", "v3.6.2"]);
 	const r2 = cli([path, "--ars-version", "3.6.2"]);
 	check("v-prefix SC-1 fires", r1.stderr.includes("SC-1 WARNING"));
-	check("no-v-prefix SC-1 fires (identical)", r2.stderr.includes("SC-1 WARNING"));
+	check(
+		"no-v-prefix SC-1 fires (identical)",
+		r2.stderr.includes("SC-1 WARNING"),
+	);
 	check("both exit 0", r1.exitCode === 0 && r2.exitCode === 0);
 });
 
@@ -270,7 +327,10 @@ withTempDir((td) => {
 	writeFileSync(path, JSON.stringify(contract), "utf-8");
 	const r = cli([path]);
 	check("exit 1", r.exitCode === 1);
-	check("stderr has ERROR + count", r.stderr.includes("ERROR:") && r.stderr.includes("schema violation"));
+	check(
+		"stderr has ERROR + count",
+		r.stderr.includes("ERROR:") && r.stderr.includes("schema violation"),
+	);
 	check("stdout empty", r.stdout === "");
 });
 
@@ -282,7 +342,10 @@ withTempDir((td) => {
 	writeFileSync(path, JSON.stringify(contract), "utf-8");
 	const r = cli([path]);
 	check("exit 1", r.exitCode === 1);
-	check("stderr has ERROR + count", r.stderr.includes("ERROR:") && r.stderr.includes("structural invariant"));
+	check(
+		"stderr has ERROR + count",
+		r.stderr.includes("ERROR:") && r.stderr.includes("structural invariant"),
+	);
 	check("stdout empty", r.stdout === "");
 });
 
@@ -295,7 +358,11 @@ withTempDir((td) => {
 	writeFileSync(path, JSON.stringify(contract), "utf-8");
 	const r = cli([path]);
 	check("exit 1", r.exitCode === 1);
-	check("only schema errors reported", r.stderr.includes("schema violation") && !r.stderr.includes("structural invariant"));
+	check(
+		"only schema errors reported",
+		r.stderr.includes("schema violation") &&
+			!r.stderr.includes("structural invariant"),
+	);
 });
 
 console.log("test_cli_pass_with_sc1_warning_exit0");
@@ -319,7 +386,10 @@ withTempDir((td) => {
 	const path = join(td, "valid.json");
 	writeFileSync(path, JSON.stringify(full()), "utf-8");
 	const r = cli([path]);
-	check("stdout is OK line", r.stdout.startsWith("OK:") && r.stdout.includes("Schema 13.2"));
+	check(
+		"stdout is OK line",
+		r.stdout.startsWith("OK:") && r.stdout.includes("Schema 13.2"),
+	);
 });
 
 console.log("test_output_shape_schema_failure");
@@ -329,7 +399,10 @@ withTempDir((td) => {
 	const path = join(td, "s.json");
 	writeFileSync(path, JSON.stringify(contract), "utf-8");
 	const r = cli([path]);
-	check("stderr has N schema violation(s)", /schema violation\(s\)/.test(r.stderr));
+	check(
+		"stderr has N schema violation(s)",
+		/schema violation\(s\)/.test(r.stderr),
+	);
 });
 
 console.log("test_output_shape_structural_failure");
@@ -339,7 +412,10 @@ withTempDir((td) => {
 	const path = join(td, "st.json");
 	writeFileSync(path, JSON.stringify(contract), "utf-8");
 	const r = cli([path]);
-	check("stderr has N structural invariant violation(s)", /structural invariant violation\(s\)/.test(r.stderr));
+	check(
+		"stderr has N structural invariant violation(s)",
+		/structural invariant violation\(s\)/.test(r.stderr),
+	);
 });
 
 // ---------------------------------------------------------------------------
@@ -385,7 +461,10 @@ withTempDir((td) => {
 	const result = runGate(path, "v3.6.2");
 	check("isError false on pass (warnings present)", result.isError === false);
 	check("verdict pass", result.verdict === "pass");
-	check("warnings carried", result.warnings.some((w) => w.startsWith("SC-1 WARNING")));
+	check(
+		"warnings carried",
+		result.warnings.some((w) => w.startsWith("SC-1 WARNING")),
+	);
 });
 
 // ---------------------------------------------------------------------------
@@ -397,19 +476,16 @@ withTempDir((td) => {
 	const contractPath = join(td, "valid.json");
 	writeFileSync(contractPath, JSON.stringify(full()), "utf-8");
 	const result = runGate(contractPath, null);
-	appendAudit(
-		{ cwd: td } as never,
-		{
-			source: "tool",
-			contractPath,
-			arsVersion: null,
-			verdict: result.verdict,
-			schemaErrorCount: result.schemaErrors.length,
-			structuralErrorCount: result.structuralErrors.length,
-			warningCount: result.warnings.length,
-			warnings: result.warnings,
-		},
-	);
+	appendAudit({ cwd: td } as never, {
+		source: "tool",
+		contractPath,
+		arsVersion: null,
+		verdict: result.verdict,
+		schemaErrorCount: result.schemaErrors.length,
+		structuralErrorCount: result.structuralErrors.length,
+		warningCount: result.warnings.length,
+		warnings: result.warnings,
+	});
 	const auditPath = join(td, ".pi", "ars-sprint-contract-audit.jsonl");
 	check("audit file exists", existsSync(auditPath));
 	if (existsSync(auditPath)) {
@@ -425,19 +501,16 @@ console.log("test_audit_failure_does_not_block");
 	// appendAudit swallows errors; passing an unwritable ctx must not throw.
 	let threw = false;
 	try {
-		appendAudit(
-			{ cwd: "/nonexistent-root-xyz/no-such-dir" } as never,
-			{
-				source: "command",
-				contractPath: "x.json",
-				arsVersion: null,
-				verdict: "pass",
-				schemaErrorCount: 0,
-				structuralErrorCount: 0,
-				warningCount: 0,
-				warnings: [],
-			},
-		);
+		appendAudit({ cwd: "/nonexistent-root-xyz/no-such-dir" } as never, {
+			source: "command",
+			contractPath: "x.json",
+			arsVersion: null,
+			verdict: "pass",
+			schemaErrorCount: 0,
+			structuralErrorCount: 0,
+			warningCount: 0,
+			warnings: [],
+		});
 	} catch {
 		threw = true;
 	}
@@ -451,7 +524,10 @@ console.log("test_audit_failure_does_not_block");
 console.log("test_parseArgs");
 {
 	const a1 = parseArgs(["c.json", "--ars-version", "v3.6.2"]);
-	check("positional + flag", a1.contract === "c.json" && a1.arsVersion === "v3.6.2");
+	check(
+		"positional + flag",
+		a1.contract === "c.json" && a1.arsVersion === "v3.6.2",
+	);
 	const a2 = parseArgs(["--ars-version=3.6.2", "c.json"]);
 	check("equals form", a2.contract === "c.json" && a2.arsVersion === "3.6.2");
 	const a3 = parseArgs(["c.json"]);

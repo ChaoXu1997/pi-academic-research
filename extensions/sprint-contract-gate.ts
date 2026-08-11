@@ -170,7 +170,7 @@ export function warn_suspicious(
 	}
 
 	// SC-9 impossible paraphrase_minimum_dimensions (mode-specific source field).
-	let pmd: unknown ;
+	let pmd: unknown;
 	let pmdSource: string | null = null;
 	if (mode.startsWith("reviewer_")) {
 		pmd = mp.paraphrase_minimum_dimensions;
@@ -426,7 +426,9 @@ export function cli(argv: string[]): CliResult {
 	// structural_error
 	const lines = result.structuralErrors.map((e) => `ERROR: ${e}`);
 	lines.push("");
-	lines.push(`${result.structuralErrors.length} structural invariant violation(s).`);
+	lines.push(
+		`${result.structuralErrors.length} structural invariant violation(s).`,
+	);
 	return { stdout: "", stderr: lines.join("\n"), exitCode: 1 };
 }
 
@@ -436,7 +438,9 @@ export function cli(argv: string[]): CliResult {
 
 function formatGateMessage(result: GateResult): string {
 	if (result.verdict === "pass") {
-		const parts = [`OK: ${result.contractPath} is a valid sprint_contract (Schema 13.2)`];
+		const parts = [
+			`OK: ${result.contractPath} is a valid sprint_contract (Schema 13.2)`,
+		];
 		if (result.warnings.length) {
 			parts.push("");
 			parts.push("Advisory warnings:");
@@ -463,7 +467,9 @@ function formatGateMessage(result: GateResult): string {
 	}
 	const lines = result.structuralErrors.map((e) => `ERROR: ${e}`);
 	lines.push("");
-	lines.push(`${result.structuralErrors.length} structural invariant violation(s).`);
+	lines.push(
+		`${result.structuralErrors.length} structural invariant violation(s).`,
+	);
 	return lines.join("\n");
 }
 
@@ -506,7 +512,10 @@ export function appendAudit(
 				})
 				.filter((x): x is string => x !== null),
 		};
-		appendFileSync(join(ctx.cwd, AUDIT_REL_PATH), `${JSON.stringify(logEntry)}\n`);
+		appendFileSync(
+			join(ctx.cwd, AUDIT_REL_PATH),
+			`${JSON.stringify(logEntry)}\n`,
+		);
 	} catch {
 		// Swallow: audit is observability, not enforcement.
 	}
@@ -537,8 +546,7 @@ export default async function (pi: ExtensionAPI): Promise<void> {
 			"Mirrors check_sprint_contract.py v3.9.2.",
 		parameters: Type.Object({
 			contract: Type.String({
-				description:
-					"Path to the sprint contract JSON file to validate.",
+				description: "Path to the sprint contract JSON file to validate.",
 			}),
 			arsVersion: Type.Optional(
 				Type.String({

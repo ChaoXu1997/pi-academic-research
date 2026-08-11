@@ -74,7 +74,13 @@ const MODE_ENUM = [
 ] as const;
 
 const PRIORITY_ENUM = ["mandatory", "high", "normal"] as const;
-const REVIEWER_ROLE_ENUM = ["eic", "methodology", "domain", "perspective", "da"] as const;
+const REVIEWER_ROLE_ENUM = [
+	"eic",
+	"methodology",
+	"domain",
+	"perspective",
+	"da",
+] as const;
 const QUANTIFIER_ENUM = ["any", "majority", "all"] as const;
 
 const SCORING_FIELDS = [
@@ -152,7 +158,9 @@ const MEASUREMENT_PROCEDURE_KEYS = new Set([
 
 const SCORING_PLAN_SCHEMA_KEYS = new Set(["required"]);
 
-const PRE_COMMITMENT_ARTIFACTS_KEYS = new Set(["acceptance_criteria_paraphrase"]);
+const PRE_COMMITMENT_ARTIFACTS_KEYS = new Set([
+	"acceptance_criteria_paraphrase",
+]);
 const ACCEPTANCE_CRITERIA_PARAPHRASE_KEYS = new Set(["minimum_dimensions"]);
 
 const DISAGREEMENT_HANDLING_KEYS = new Set([
@@ -362,7 +370,9 @@ function validateDimensions(raw: unknown, errors: string[]): void {
 		return;
 	}
 	if (raw.length < 1) {
-		errors.push("acceptance_dimensions: must have at least 1 item (minItems 1)");
+		errors.push(
+			"acceptance_dimensions: must have at least 1 item (minItems 1)",
+		);
 	}
 	raw.forEach((dim, i) => {
 		const path = `acceptance_dimensions[${i}]`;
@@ -414,9 +424,13 @@ function validateDimensions(raw: unknown, errors: string[]): void {
 						`${path}.eligible_roles: must have at least 1 item (minItems 1)`,
 					);
 				if (!hasUniqueItems(v as unknown[]))
-					errors.push(`${path}.eligible_roles: items must be unique (uniqueItems)`);
+					errors.push(
+						`${path}.eligible_roles: items must be unique (uniqueItems)`,
+					);
 				v.forEach((role, j) => {
-					if (!(REVIEWER_ROLE_ENUM as readonly string[]).includes(role as string))
+					if (
+						!(REVIEWER_ROLE_ENUM as readonly string[]).includes(role as string)
+					)
 						errors.push(
 							`${path}.eligible_roles[${j}]: '${role}' is not one of [${REVIEWER_ROLE_ENUM.join(", ")}]`,
 						);
@@ -453,7 +467,9 @@ function validateMeasurementProcedure(raw: unknown, errors: string[]): void {
 	if ("reviewer_must_output_before_paper" in raw) {
 		const v = raw.reviewer_must_output_before_paper;
 		if (!Array.isArray(v)) {
-			errors.push(`${path}.reviewer_must_output_before_paper: must be an array`);
+			errors.push(
+				`${path}.reviewer_must_output_before_paper: must be an array`,
+			);
 		} else {
 			if (v.length < 2)
 				errors.push(
@@ -493,9 +509,13 @@ function validateMeasurementProcedure(raw: unknown, errors: string[]): void {
 							`${spsPath}.required: must have at least 5 items (minItems 5)`,
 						);
 					if (!hasUniqueItems(req as unknown[]))
-						errors.push(`${spsPath}.required: items must be unique (uniqueItems)`);
+						errors.push(
+							`${spsPath}.required: items must be unique (uniqueItems)`,
+						);
 					req.forEach((field, j) => {
-						if (!(SCORING_FIELDS as readonly string[]).includes(field as string))
+						if (
+							!(SCORING_FIELDS as readonly string[]).includes(field as string)
+						)
 							errors.push(
 								`${spsPath}.required[${j}]: '${field}' is not one of [${SCORING_FIELDS.join(", ")}]`,
 							);
@@ -524,7 +544,9 @@ function validatePreCommitmentArtifacts(raw: unknown, errors: string[]): void {
 			errors.push(`${path}: additional property '${key}' not allowed`);
 	}
 	if (!("acceptance_criteria_paraphrase" in raw))
-		errors.push(`${path}: missing required property 'acceptance_criteria_paraphrase'`);
+		errors.push(
+			`${path}: missing required property 'acceptance_criteria_paraphrase'`,
+		);
 	if ("acceptance_criteria_paraphrase" in raw) {
 		const acp = raw.acceptance_criteria_paraphrase;
 		const acpPath = `${path}.acceptance_criteria_paraphrase`;
@@ -536,9 +558,15 @@ function validatePreCommitmentArtifacts(raw: unknown, errors: string[]): void {
 					errors.push(`${acpPath}: additional property '${key}' not allowed`);
 			}
 			if (!("minimum_dimensions" in acp))
-				errors.push(`${acpPath}: missing required property 'minimum_dimensions'`);
+				errors.push(
+					`${acpPath}: missing required property 'minimum_dimensions'`,
+				);
 			if ("minimum_dimensions" in acp) {
-				validateAnyOfAllOrInt(acp.minimum_dimensions, `${acpPath}.minimum_dimensions`, errors);
+				validateAnyOfAllOrInt(
+					acp.minimum_dimensions,
+					`${acpPath}.minimum_dimensions`,
+					errors,
+				);
 			}
 		}
 	}
@@ -580,7 +608,9 @@ function validateDisagreementHandling(raw: unknown, errors: string[]): void {
 					errors.push(`${spPath}: additional property '${key}' not allowed`);
 			}
 			if (!("per_dimension_criteria" in sp))
-				errors.push(`${spPath}: missing required property 'per_dimension_criteria'`);
+				errors.push(
+					`${spPath}: missing required property 'per_dimension_criteria'`,
+				);
 			if ("per_dimension_criteria" in sp) {
 				const pdc = sp.per_dimension_criteria;
 				if (!Array.isArray(pdc)) {
@@ -598,7 +628,9 @@ function validateDisagreementHandling(raw: unknown, errors: string[]): void {
 						}
 						for (const key of Object.keys(crit)) {
 							if (!PER_DIMENSION_CRITERIA_KEYS.has(key))
-								errors.push(`${cPath}: additional property '${key}' not allowed`);
+								errors.push(
+									`${cPath}: additional property '${key}' not allowed`,
+								);
 						}
 						for (const k of [
 							"dimension_id",
@@ -606,11 +638,13 @@ function validateDisagreementHandling(raw: unknown, errors: string[]): void {
 							"what_triggers_block",
 							"what_triggers_warn",
 						]) {
-							if (!(k in crit)) errors.push(`${cPath}: missing required property '${k}'`);
+							if (!(k in crit))
+								errors.push(`${cPath}: missing required property '${k}'`);
 						}
 						if ("dimension_id" in crit) {
 							const v = crit.dimension_id;
-							if (!isStr(v)) errors.push(`${cPath}.dimension_id: must be a string`);
+							if (!isStr(v))
+								errors.push(`${cPath}.dimension_id: must be a string`);
 							else if (!DIM_ID_RE.test(v))
 								errors.push(
 									`${cPath}.dimension_id: '${v}' does not match pattern ^D[1-9][0-9]?$`,
@@ -644,8 +678,13 @@ function validateDisagreementHandling(raw: unknown, errors: string[]): void {
 					errors.push(`${pccpPath}: additional property '${key}' not allowed`);
 			}
 			if (!("check_writer_artifact" in pccp))
-				errors.push(`${pccpPath}: missing required property 'check_writer_artifact'`);
-			if ("check_writer_artifact" in pccp && pccp.check_writer_artifact !== "pre_commitment_artifacts")
+				errors.push(
+					`${pccpPath}: missing required property 'check_writer_artifact'`,
+				);
+			if (
+				"check_writer_artifact" in pccp &&
+				pccp.check_writer_artifact !== "pre_commitment_artifacts"
+			)
 				errors.push(
 					`${pccpPath}.check_writer_artifact: '${pccp.check_writer_artifact}' must be const 'pre_commitment_artifacts'`,
 				);
@@ -662,10 +701,15 @@ function validateDisagreementHandling(raw: unknown, errors: string[]): void {
 					errors.push(`${drPath}: additional property '${key}' not allowed`);
 			}
 			for (const k of ["on_dimension_disagreement", "on_structural_drift"]) {
-				if (!(k in dr)) errors.push(`${drPath}: missing required property '${k}'`);
+				if (!(k in dr))
+					errors.push(`${drPath}: missing required property '${k}'`);
 				if (k in dr) {
 					const v = (dr as Record<string, unknown>)[k];
-					if (!(EVALUATOR_DISAGREEMENT_ENUM as readonly string[]).includes(v as string))
+					if (
+						!(EVALUATOR_DISAGREEMENT_ENUM as readonly string[]).includes(
+							v as string,
+						)
+					)
 						errors.push(
 							`${drPath}.${k}: '${v}' is not one of [${EVALUATOR_DISAGREEMENT_ENUM.join(", ")}]`,
 						);
@@ -694,7 +738,8 @@ function validateFailureConditions(raw: unknown, errors: string[]): void {
 				errors.push(`${path}: additional property '${key}' not allowed`);
 		}
 		for (const k of ["condition_id", "severity", "expression", "action"]) {
-			if (!(k in cond)) errors.push(`${path}: missing required property '${k}'`);
+			if (!(k in cond))
+				errors.push(`${path}: missing required property '${k}'`);
 		}
 		if ("condition_id" in cond) {
 			const v = cond.condition_id;
@@ -709,7 +754,8 @@ function validateFailureConditions(raw: unknown, errors: string[]): void {
 			if (!isInt(v)) errors.push(`${path}.severity: must be an integer`);
 			else {
 				if (v < 0) errors.push(`${path}.severity: ${v} is less than minimum 0`);
-				if (v > 100) errors.push(`${path}.severity: ${v} is greater than maximum 100`);
+				if (v > 100)
+					errors.push(`${path}.severity: ${v} is greater than maximum 100`);
 			}
 		}
 		if ("cross_reviewer_quantifier" in cond) {
@@ -722,7 +768,8 @@ function validateFailureConditions(raw: unknown, errors: string[]): void {
 		if ("expression" in cond) {
 			const v = cond.expression;
 			if (!isStr(v)) errors.push(`${path}.expression: must be a string`);
-			else if (v.length < 1) errors.push(`${path}.expression: must have minLength 1`);
+			else if (v.length < 1)
+				errors.push(`${path}.expression: must have minLength 1`);
 		}
 		if ("action" in cond) {
 			const v = cond.action;
@@ -747,7 +794,8 @@ function validateOverrideLadder(raw: unknown, errors: string[]): void {
 				errors.push(`${path}: additional property '${key}' not allowed`);
 		}
 		for (const k of ["round", "trigger", "required"]) {
-			if (!(k in entry)) errors.push(`${path}: missing required property '${k}'`);
+			if (!(k in entry))
+				errors.push(`${path}: missing required property '${k}'`);
 		}
 		if ("round" in entry) {
 			const v = entry.round;
@@ -758,7 +806,8 @@ function validateOverrideLadder(raw: unknown, errors: string[]): void {
 		if ("trigger" in entry) {
 			const v = entry.trigger;
 			if (!isStr(v)) errors.push(`${path}.trigger: must be a string`);
-			else if (v.length < 1) errors.push(`${path}.trigger: must have minLength 1`);
+			else if (v.length < 1)
+				errors.push(`${path}.trigger: must have minLength 1`);
 		}
 		if ("required" in entry) {
 			const v = entry.required;
@@ -788,7 +837,8 @@ function validateAgentAmendments(raw: unknown, errors: string[]): void {
 	}
 	if ("stage_specific_notes" in raw) {
 		const v = raw.stage_specific_notes;
-		if (!isStr(v)) errors.push(`${path}.stage_specific_notes: must be a string`);
+		if (!isStr(v))
+			errors.push(`${path}.stage_specific_notes: must be a string`);
 		else if (v.length > 500)
 			errors.push(`${path}.stage_specific_notes: must have maxLength 500`);
 	}
@@ -799,7 +849,9 @@ function validateAgentAmendments(raw: unknown, errors: string[]): void {
 		} else {
 			v.forEach((item, j) => {
 				if (!isStr(item))
-					errors.push(`${path}.additional_measurement_hints[${j}]: must be a string`);
+					errors.push(
+						`${path}.additional_measurement_hints[${j}]: must be a string`,
+					);
 				else if (item.length < 1)
 					errors.push(
 						`${path}.additional_measurement_hints[${j}]: must have minLength 1`,
@@ -810,7 +862,11 @@ function validateAgentAmendments(raw: unknown, errors: string[]): void {
 }
 
 /** anyOf: const "all" OR integer minimum 1. */
-function validateAnyOfAllOrInt(raw: unknown, path: string, errors: string[]): void {
+function validateAnyOfAllOrInt(
+	raw: unknown,
+	path: string,
+	errors: string[],
+): void {
 	if (raw === "all") return;
 	if (isInt(raw)) {
 		if (raw < 1) errors.push(`${path}: ${raw} is less than minimum 1`);
@@ -825,7 +881,10 @@ function validateAnyOfAllOrInt(raw: unknown, path: string, errors: string[]): vo
 // @internal — 13 conditional allOf if/then branches
 // ---------------------------------------------------------------------------
 
-function applyConditionalBranches(contract: SprintContract, errors: string[]): void {
+function applyConditionalBranches(
+	contract: SprintContract,
+	errors: string[],
+): void {
 	const mode = contract.mode;
 	const isReviewer = isStr(mode) && REVIEWER_MODE_RE.test(mode);
 	const isWriter = mode === "writer_full";
@@ -873,14 +932,18 @@ function applyConditionalBranches(contract: SprintContract, errors: string[]): v
 
 	// Branch 3: reviewer → measurement_procedure required.
 	if (isReviewer && !("measurement_procedure" in contract))
-		errors.push("root: missing required property 'measurement_procedure' (reviewer mode)");
+		errors.push(
+			"root: missing required property 'measurement_procedure' (reviewer mode)",
+		);
 
 	// Branch 4: reviewer → each action ∈ editorial_decision enum.
 	if (isReviewer) {
 		conds.forEach((c, i) => {
 			if (
 				"action" in c &&
-				!(REVIEWER_ACTION_ENUM as readonly string[]).includes(c.action as string)
+				!(REVIEWER_ACTION_ENUM as readonly string[]).includes(
+					c.action as string,
+				)
 			) {
 				errors.push(
 					`failure_conditions[${i}].action: '${c.action}' is not one of [${REVIEWER_ACTION_ENUM.join(", ")}] (reviewer mode)`,
@@ -908,7 +971,9 @@ function applyConditionalBranches(contract: SprintContract, errors: string[]): v
 		conds.forEach((c, i) => {
 			if (
 				"action" in c &&
-				!(EVALUATOR_ACTION_ENUM as readonly string[]).includes(c.action as string)
+				!(EVALUATOR_ACTION_ENUM as readonly string[]).includes(
+					c.action as string,
+				)
 			) {
 				errors.push(
 					`failure_conditions[${i}].action: '${c.action}' is not one of [${EVALUATOR_ACTION_ENUM.join(", ")}] (evaluator_full mode)`,
@@ -981,7 +1046,9 @@ function applyConditionalBranches(contract: SprintContract, errors: string[]): v
  *
  * @public — pinned for port-panel-synthesis-gate and port-phase-conformance-gate.
  */
-export function check_structural_invariants(contract: SprintContract): string[] {
+export function check_structural_invariants(
+	contract: SprintContract,
+): string[] {
 	const errors: string[] = [];
 
 	const dims = Array.isArray(contract.acceptance_dimensions)
@@ -1075,7 +1142,9 @@ export function check_structural_invariants(contract: SprintContract): string[] 
 				if (m2) {
 					const dref = m2[1];
 					if (priorities.get(dref) !== "mandatory") {
-						errors.push(`${cid}: fatal atom dimension ${dref} must be mandatory`);
+						errors.push(
+							`${cid}: fatal atom dimension ${dref} must be mandatory`,
+						);
 					}
 				}
 			}
