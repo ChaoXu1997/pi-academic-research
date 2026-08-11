@@ -17,7 +17,6 @@
 
 import {
 	ContractError,
-	ReportError,
 	SynthesisError,
 	type DimensionScore,
 	type ReviewerReport,
@@ -80,7 +79,7 @@ export interface Synthesis {
 export function quantifier_fires(
 	quantifier: string,
 	indicators: boolean[],
-	warnings: string[],
+	_warnings: string[],
 ): boolean {
 	const n = indicators.length;
 	if (n === 0) {

@@ -324,8 +324,7 @@ export function runGate(
 	try {
 		const text = readFileSync(contractPath, "utf-8");
 		contract = JSON.parse(text) as SprintContract;
-	} catch (e) {
-		const msg = e instanceof Error ? e.message : String(e);
+	} catch {
 		return {
 			verdict: "file_error",
 			isError: true,
@@ -333,7 +332,6 @@ export function runGate(
 			structuralErrors: [],
 			warnings: [],
 			contractPath,
-			// message carried via structuralErrors[0] convention for formatting
 		};
 	}
 

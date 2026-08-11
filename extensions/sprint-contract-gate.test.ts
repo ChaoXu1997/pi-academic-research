@@ -11,7 +11,6 @@ import {
 	runGate,
 	parseArgs,
 	appendAudit,
-	type GateResult,
 } from "./sprint-contract-gate.js";
 import {
 	readFileSync,
@@ -72,10 +71,6 @@ function load(path: string): SprintContract {
 
 function full(): SprintContract {
 	return load(FULL_PATH);
-}
-
-function clone<T>(x: T): T {
-	return JSON.parse(JSON.stringify(x)) as T;
 }
 
 function withTempDir(fn: (dir: string) => void): void {
