@@ -285,6 +285,7 @@ export interface GateResult {
 	structuralErrors: string[];
 	warnings: string[];
 	contractPath: string;
+	message?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -324,7 +325,7 @@ export function runGate(
 	try {
 		const text = readFileSync(contractPath, "utf-8");
 		contract = JSON.parse(text) as SprintContract;
-	} catch {
+	} catch (e) {
 		return {
 			verdict: "file_error",
 			isError: true,
@@ -332,6 +333,7 @@ export function runGate(
 			structuralErrors: [],
 			warnings: [],
 			contractPath,
+			message: e instanceof Error ? e.message : String(e),
 		};
 	}
 
@@ -397,17 +399,9 @@ export function cli(argv: string[]): CliResult {
 	}
 
 	if (result.verdict === "file_error") {
-		// Re-read to surface the OS/parse error message (runGate swallowed it).
-		let detail = "unknown error";
-		try {
-			readFileSync(args.contract, "utf-8");
-			JSON.parse(readFileSync(args.contract, "utf-8"));
-		} catch (e) {
-			detail = e instanceof Error ? e.message : String(e);
-		}
 		return {
 			stdout: "",
-			stderr: `ERROR: failed to load ${args.contract}: ${detail}`,
+			stderr: `ERROR: failed to load ${args.contract}: ${result.message ?? "unknown error"}`,
 			exitCode: 1,
 		};
 	}
@@ -447,13 +441,7 @@ function formatGateMessage(result: GateResult): string {
 		return parts.join("\n");
 	}
 	if (result.verdict === "file_error") {
-		let detail = "unknown error";
-		try {
-			JSON.parse(readFileSync(result.contractPath, "utf-8"));
-		} catch (e) {
-			detail = e instanceof Error ? e.message : String(e);
-		}
-		return `ERROR: failed to load ${result.contractPath}: ${detail}`;
+		return `ERROR: failed to load ${result.contractPath}: ${result.message ?? "unknown error"}`;
 	}
 	if (result.verdict === "schema_error") {
 		const lines = result.schemaErrors.map((e) => `ERROR: ${e}`);

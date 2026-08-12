@@ -445,6 +445,18 @@ withTempDir((td) => {
 	const result = runGate(path, null);
 	check("isError true on file error", result.isError === true);
 	check("verdict file_error", result.verdict === "file_error");
+	check("message carried", typeof result.message === "string" && result.message.length > 0);
+});
+
+console.log("test_file_error_bad_json_carries_message");
+withTempDir((td) => {
+	const path = join(td, "bad.json");
+	writeFileSync(path, "{ not valid json", "utf-8");
+	const result = runGate(path, null);
+	check("verdict file_error (bad json)", result.verdict === "file_error");
+	check("message carried (bad json)", typeof result.message === "string" && result.message.length > 0);
+	const out = cli([path]);
+	check("cli surfaces message", out.stderr.includes("failed to load") && out.exitCode === 1);
 });
 
 console.log("test_tool_isError_false_on_pass_with_warnings");
