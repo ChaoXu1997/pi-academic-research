@@ -133,24 +133,15 @@ export const _EXPRESSION_PATTERNS: ReadonlyArray<readonly [string, RegExp]> = [
 		"every_priority",
 		new RegExp("^every (?<p1>[a-z]+) dimension scores " + _SCORE + "$"),
 	],
-	[
-		"dim_exact",
-		new RegExp("^(?<dim>D\\d+) scores " + _SCORE + "$"),
-	],
+	["dim_exact", new RegExp("^(?<dim>D\\d+) scores " + _SCORE + "$")],
 	["fatal_priority", /^any (?<p1>[a-z]+) dimension has a fatal block$/],
 	["fatal_dim", /^(?<dim>D\d+) has a fatal block$/],
-	[
-		"any_all",
-		new RegExp("^any dimension scores " + _SCORE + " or worse$"),
-	],
+	["any_all", new RegExp("^any dimension scores " + _SCORE + " or worse$")],
 	[
 		"dim_threshold",
 		new RegExp("^(?<dim>D\\d+) scores " + _SCORE + " or worse$"),
 	],
-	[
-		"every_all",
-		new RegExp("^every dimension scores " + _SCORE + "$"),
-	],
+	["every_all", new RegExp("^every dimension scores " + _SCORE + "$")],
 ];
 
 // ---------------------------------------------------------------------------
@@ -159,12 +150,23 @@ export const _EXPRESSION_PATTERNS: ReadonlyArray<readonly [string, RegExp]> = [
 
 /** Ported verbatim from upstream _DEFAULT_IGNORABLE_RANGES. @internal */
 const _DEFAULT_IGNORABLE_RANGES: readonly [number, number][] = [
-	[0x00ad, 0x00ad], [0x034f, 0x034f], [0x061c, 0x061c],
-	[0x115f, 0x1160], [0x17b4, 0x17b5], [0x180b, 0x180f],
-	[0x200b, 0x200f], [0x202a, 0x202e], [0x2060, 0x206f],
-	[0x3164, 0x3164], [0xfe00, 0xfe0f], [0xfeff, 0xfeff],
-	[0xffa0, 0xffa0], [0xfff0, 0xfff8], [0x1bca0, 0x1bca3],
-	[0x1d173, 0x1d17a], [0xe0000, 0xe0fff],
+	[0x00ad, 0x00ad],
+	[0x034f, 0x034f],
+	[0x061c, 0x061c],
+	[0x115f, 0x1160],
+	[0x17b4, 0x17b5],
+	[0x180b, 0x180f],
+	[0x200b, 0x200f],
+	[0x202a, 0x202e],
+	[0x2060, 0x206f],
+	[0x3164, 0x3164],
+	[0xfe00, 0xfe0f],
+	[0xfeff, 0xfeff],
+	[0xffa0, 0xffa0],
+	[0xfff0, 0xfff8],
+	[0x1bca0, 0x1bca3],
+	[0x1d173, 0x1d17a],
+	[0xe0000, 0xe0fff],
 ];
 
 /** Format (Cf) category regex. @internal */
@@ -173,7 +175,9 @@ const _FORMAT_CHAR_RE = /\p{Cf}/u;
 /** @internal — equivalent to upstream _is_default_ignorable. */
 function _is_default_ignorable(char: string): boolean {
 	const cp = char.codePointAt(0)!;
-	return _DEFAULT_IGNORABLE_RANGES.some(([start, end]) => cp >= start && cp <= end);
+	return _DEFAULT_IGNORABLE_RANGES.some(
+		([start, end]) => cp >= start && cp <= end,
+	);
 }
 
 /** @internal — Python str.split() word count (splits on whitespace, drops empties). */
@@ -217,10 +221,7 @@ function _visibleTextFromHtml(html: string): string {
  */
 function _rendered_header_cell(cell: string): string {
 	let rendered = cell.replace(/\\([^\w\s])/g, "$1");
-	rendered = rendered.replace(
-		/!?\[([^\]]*)\](?:\([^)]+\)|\[[^\]]*\])/g,
-		"$1",
-	);
+	rendered = rendered.replace(/!?\[([^\]]*)\](?:\([^)]+\)|\[[^\]]*\])/g, "$1");
 	rendered = rendered.replace(/\[([^\]]+)\]/g, "$1");
 	rendered = _visibleTextFromHtml(rendered);
 	rendered = rendered.normalize("NFKC");
@@ -455,7 +456,10 @@ export function _possible_markdown_cells(line: string): string[] {
  * Faithful port of upstream validate_evidence_anchor.
  * @public — pinned.
  */
-export function validate_evidence_anchor(anchor: string, context: string): void {
+export function validate_evidence_anchor(
+	anchor: string,
+	context: string,
+): void {
 	let value = anchor.trim();
 	if (value.startsWith("[")) {
 		if (!value.endsWith("]")) {
@@ -491,7 +495,10 @@ export function validate_evidence_anchor(anchor: string, context: string): void 
 		throw new ReportError(`[${tag}: ${context}: expected typed anchor]`);
 	}
 	const tail = match.groups!.tail;
-	if (!_balanced_square_brackets(tail) || (tail.split("`").length - 1) % 2 !== 0) {
+	if (
+		!_balanced_square_brackets(tail) ||
+		(tail.split("`").length - 1) % 2 !== 0
+	) {
 		throw new ReportError(
 			`[ANCHOR-INVALID: ${context}: locator delimiters must be balanced]`,
 		);
@@ -674,7 +681,7 @@ export function parse_da_tables(
 	}
 	const lines = strip_fences(text, { preserveFencedBlocks: true });
 	const [sections, dupes] = split_sections(lines);
-	if ("Review Body" in dupes || !("Review Body" in sections)) {
+	if (dupes.has("Review Body") || !("Review Body" in sections)) {
 		throw new ReportError(
 			`[DA-TABLE-PARSE: ${path}: expected exactly one ## Review Body]`,
 		);
@@ -702,7 +709,13 @@ export function parse_da_tables(
 	}
 	_check_da_shadow_issue_surfaces(lines, path);
 	const [criticalLines, criticalIdCol, criticalAnchorCol] =
-		_parse_da_table_block(reviewLines, "CRITICAL", path, criticalStart, majorStart);
+		_parse_da_table_block(
+			reviewLines,
+			"CRITICAL",
+			path,
+			criticalStart,
+			majorStart,
+		);
 	const [majorLines, majorIdCol, majorAnchorCol] = _parse_da_table_block(
 		reviewLines,
 		"MAJOR",
@@ -812,7 +825,11 @@ export function parse_expression(
 			);
 		}
 		let dimIds: string[];
-		if (kind === "dim_exact" || kind === "fatal_dim" || kind === "dim_threshold") {
+		if (
+			kind === "dim_exact" ||
+			kind === "fatal_dim" ||
+			kind === "dim_threshold"
+		) {
 			const did = match.groups!.dim;
 			if (!(did in dimensions)) {
 				throw new ContractError(
@@ -947,7 +964,7 @@ export function parse_report(
 ): ReviewerReport {
 	const lines = strip_fences(text);
 	const [sections, dupes] = split_sections(lines);
-	if ("Dimension Scores" in dupes) {
+	if (dupes.has("Dimension Scores")) {
 		throw new ReportError(
 			`[REPORT-PARSE: ${path}: duplicated ## Dimension Scores]`,
 		);

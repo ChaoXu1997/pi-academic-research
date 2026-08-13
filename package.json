@@ -31,7 +31,9 @@
     "extensions/core/sprint-contract-core.ts",
     "extensions/core/reviewer-gate-core.ts",
     "extensions/core/panel-synthesis-core.ts",
+        "extensions/core/phase-conformance-core.ts",
     "extensions/panel-synthesis-gate.ts",
+        "extensions/phase-conformance-gate.ts",
     "extensions/sprint-contract-gate.ts",
     "extensions/ars_phase_scope_manifest.json",
     "prompts",
@@ -48,7 +50,7 @@
   "scripts": {
     "postinstall": "bash scripts/init-submodule.sh",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "tsc -p tsconfig.test.json && cp extensions/ars_phase_scope_manifest.json .test-build/ && node .test-build/citation-gate.test.js && node .test-build/write-scope-guard.test.js && node .test-build/pipeline-integrity-gate.test.js && node .test-build/core/sprint-contract-core.test.js && node .test-build/sprint-contract-gate.test.js && node .test-build/core/reviewer-gate-core.test.js && node .test-build/core/panel-synthesis-core.test.js && node .test-build/panel-synthesis-gate.test.js",
+    "test": "tsc -p tsconfig.test.json && cp extensions/ars_phase_scope_manifest.json .test-build/ && node .test-build/citation-gate.test.js && node .test-build/write-scope-guard.test.js && node .test-build/pipeline-integrity-gate.test.js && node .test-build/core/sprint-contract-core.test.js && node .test-build/sprint-contract-gate.test.js && node .test-build/core/reviewer-gate-core.test.js && node .test-build/core/panel-synthesis-core.test.js && node .test-build/panel-synthesis-gate.test.js && node .test-build/core/phase-conformance-core.test.js && node .test-build/core/phase-conformance-scanner.test.js && node .test-build/phase-conformance-gate.test.js",
     "test:exhaustive": "tsc -p tsconfig.test.json && node .test-build/core/panel-synthesis-exhaustive.test.js",
     "test:e2e": "tsc -p tsconfig.test.json && node .test-build/citation-gate.e2e.test.js",
     "prepublishOnly": "npm run typecheck && npm run test"
