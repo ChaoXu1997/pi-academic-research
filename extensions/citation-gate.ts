@@ -31,7 +31,7 @@
  */
 
 import { execFile as execFileCb } from "node:child_process";
-import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type {
 	ExtensionAPI,
@@ -178,10 +178,16 @@ function classify(stdout: string, _code: number): Omit<PerDoi, "doi"> {
 		const errorCode = String(parsed.error_code ?? parsed.errorCode ?? "");
 		const errMsg = typeof parsed.error === "string" ? parsed.error : "";
 		// Dead DOI / unreachable source: ref-verify returns {"error":"HTTP Error 404: ..."} with NO
-		// verdict field. A 404 means the DOI does not resolve → hard REJECT.
+		// verdict field. A 404/410 means the DOI does not resolve → hard REJECT. Any other bare
+		// error (429 rate limit, 5xx, DNS, timeout, connection reset, status-less failures) means
+		// "could not verify", never "the citation is wrong" → REVIEW. Misclassifying those as
+		// REJECT made the gate hard-fail on provider rate limiting (observed 2026-08-31:
+		// 9/10 freshly PubMed-verified DOIs "REJECT"ed behind an HTTP 429).
 		if (!verdict && errMsg) {
+			const status = /HTTP Error (\d{3})/.exec(errMsg)?.[1] ?? "";
+			const dead = status === "404" || status === "410";
 			return {
-				verdict: "REJECT",
+				verdict: dead ? "REJECT" : "REVIEW",
 				raw: errMsg.slice(0, 160),
 				stdoutSnippet: snippet,
 			};
@@ -226,7 +232,7 @@ function classify(stdout: string, _code: number): Omit<PerDoi, "doi"> {
 
 export type GateOutcome = "pass" | "review" | "fail" | "advisory";
 
-export { extractDois, classify, runGate, appendCitationAudit };
+export { extractDois, classify, runGate, readInput, appendCitationAudit };
 export type { PerDoi };
 
 export interface GateResult {
@@ -352,12 +358,17 @@ async function runGate(
 /** Read the input: a file path (read its text) or a literal DOI list. */
 function readInput(input: string): string {
 	const trimmed = input.trim();
-	// If it looks like a path to an existing references file, read it.
-	if (/^[\w./~-]+\.(bib|txt|md|csv|jsonl?|tex)$/i.test(trimmed)) {
+	// A single token (no whitespace) that names an existing file is a references-file path —
+	// read it. existsSync handles Unicode paths (the old ASCII-only [\w./~-] regex silently
+	// treated e.g. .../毕业论文综述/refs/dois.txt as a literal DOI list, yielding "No DOIs
+	// found"), and a literal DOI list never names an existing file.
+	if (!/\s/.test(trimmed)) {
 		try {
-			return readFileSync(trimmed, "utf-8");
+			if (existsSync(trimmed) && statSync(trimmed).isFile()) {
+				return readFileSync(trimmed, "utf-8");
+			}
 		} catch {
-			// fall through to treating as literal
+			/* unreadable → fall through to literal */
 		}
 	}
 	return input;

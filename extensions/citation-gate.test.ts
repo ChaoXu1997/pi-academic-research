@@ -3,8 +3,20 @@
 // (The end-to-end runGate needs the ref-verify CLI installed; these tests cover the bug-prone
 // parsing layer that does NOT need it.)
 
-import { classify, extractDois, appendCitationAudit } from "./citation-gate.js";
-import { mkdtempSync, readFileSync, rmSync, existsSync } from "node:fs";
+import {
+	classify,
+	extractDois,
+	readInput,
+	appendCitationAudit,
+} from "./citation-gate.js";
+import {
+	mkdtempSync,
+	mkdirSync,
+	readFileSync,
+	writeFileSync,
+	rmSync,
+	existsSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -169,6 +181,77 @@ console.log("audit trail");
 					rmSync(longDir, { recursive: true, force: true });
 				}
 			})(),
+		);
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
+	}
+}
+
+console.log("bare-error classification (dead DOI vs network failure)");
+{
+	// 404/10 stay REJECT (DOI genuinely does not resolve)
+	check(
+		"bare error 404 → REJECT",
+		classify(JSON.stringify({ error: "HTTP Error 404: Not Found" }), 1).verdict ===
+			"REJECT",
+	);
+	check(
+		"bare error 410 → REJECT",
+		classify(JSON.stringify({ error: "HTTP Error 410: Gone" }), 1).verdict ===
+			"REJECT",
+	);
+	// Network/provider failures are "cannot verify" → REVIEW, never REJECT
+	check(
+		"bare error 429 (rate limit) → REVIEW",
+		classify(
+			JSON.stringify({ error: "HTTP Error 429: Too Many Requests" }),
+			1,
+		).verdict === "REVIEW",
+	);
+	check(
+		"bare error 503 → REVIEW",
+		classify(
+			JSON.stringify({ error: "HTTP Error 503: Service Unavailable" }),
+			1,
+		).verdict === "REVIEW",
+	);
+	check(
+		"bare error timeout (no HTTP status) → REVIEW",
+		classify(JSON.stringify({ error: "URLError: timed out" }), 1).verdict ===
+			"REVIEW",
+	);
+	check(
+		"bare error status-less → REVIEW",
+		classify(JSON.stringify({ error: "all providers unreachable" }), 1).verdict ===
+			"REVIEW",
+	);
+}
+
+console.log("readInput (references-file path vs literal DOI list)");
+{
+	const dir = mkdtempSync(join(tmpdir(), "ars-cg-"));
+	try {
+		// Unicode path: the old ASCII-only [\w./~-] regex treated this as a literal list.
+		const unicodePath = join(dir, "中文目录", "dois.txt");
+		mkdirSync(join(dir, "中文目录"), { recursive: true });
+		writeFileSync(
+			unicodePath,
+			"10.1016/j.vetimm.2004.09.022\n10.1089/hum.2005.16.1\n",
+			"utf-8",
+		);
+		check(
+			"reads a references file under a Unicode path",
+			readInput(unicodePath).includes("10.1089/hum.2005.16.1"),
+		);
+		check(
+			"literal DOI list stays literal",
+			readInput("10.1016/j.cell.2023.01.001, 10.1038/s41598-022-07680-9") ===
+				"10.1016/j.cell.2023.01.001, 10.1038/s41598-022-07680-9",
+		);
+		const missing = join(dir, "nope.bib");
+		check(
+			"nonexistent path falls back to literal input",
+			readInput(missing) === missing,
 		);
 	} finally {
 		rmSync(dir, { recursive: true, force: true });
