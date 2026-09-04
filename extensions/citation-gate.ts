@@ -135,13 +135,23 @@ async function runRefVerify(
 
 // --- DOI extraction + verdict parsing ---------------------------------------
 
-const DOI_RE = /\b10\.\d{4,9}\/[^\s"<>),;\]]+/g;
+const DOI_RE = /\b10\.\d{4,9}\/[^\s"<>,;\]]+/g;
 
 function extractDois(input: string): string[] {
 	const seen = new Set<string>();
 	for (const raw of input.matchAll(DOI_RE)) {
-		// Strip a trailing punctuation artifact that the regex char-class let through.
-		const doi = raw[0].replace(/[.,;:)]+$/g, "").replace(/\}+$/g, "");
+		// Strip trailing punctuation artifacts that the regex char-class lets through
+		// ('.' is legal mid-DOI, so only TRAILING ones are stripped).
+		let doi = raw[0].replace(/[.,;:]+$/g, "").replace(/\}+$/g, "");
+		// Legacy Elsevier/Wiley suffixes legally contain MATCHED parens
+		// (e.g. 10.1016/0378-1135(90)90144-K) — keep those, and strip only an
+		// UNBALANCED trailing ')' (citation wrapper like "(10.1234/x)").
+		const open = (doi.match(/\(/g) ?? []).length;
+		let close = (doi.match(/\)/g) ?? []).length;
+		while (doi.endsWith(")") && close > open) {
+			doi = doi.slice(0, -1);
+			close--;
+		}
 		if (doi.length > 7) seen.add(doi);
 	}
 	return [...seen];

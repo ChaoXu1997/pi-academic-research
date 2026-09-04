@@ -54,6 +54,27 @@ console.log("DOI extraction");
 		"ignores too-short prefix (10.1/x fails the >=4-digit DOI regex)",
 		extractDois("10.1/x").length === 0,
 	);
+	check(
+		"keeps balanced parens inside legacy Elsevier DOI",
+		extractDois("Vet Microbiol. 1990;23(1-4):147-54. doi:10.1016/0378-1135(90)90144-K")[0] ===
+			"10.1016/0378-1135(90)90144-K",
+	);
+	check(
+		"keeps balanced parens inside legacy Cell DOI",
+		extractDois("doi:10.1016/0092-8674(83)90040-5.")[0] === "10.1016/0092-8674(83)90040-5",
+	);
+	check(
+		"strips unbalanced trailing paren (citation wrapper)",
+		extractDois("(verified at 10.1080/20013078.2018.1535750)")[0] === "10.1080/20013078.2018.1535750",
+	);
+	check(
+		"strips wrapper paren around DOI with internal parens",
+		extractDois("(see 10.1016/0378-1135(90)90144-K)")[0] === "10.1016/0378-1135(90)90144-K",
+	);
+	check(
+		"strips sentence period after paren DOI",
+		extractDois("cited as 10.1016/0378-1135(90)90144-K.")[0] === "10.1016/0378-1135(90)90144-K",
+	);
 }
 
 console.log("verdict classification (PASS / REJECT / REVIEW)");
